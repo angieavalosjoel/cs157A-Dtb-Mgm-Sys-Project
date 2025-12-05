@@ -1,4 +1,4 @@
--- Initialize Data for Student Management System
+-- Initialize Data for EduTrack
 
 -- Insert students
 INSERT INTO students (FirstName, LastName, Email, Username, Password) VALUES
