@@ -16,6 +16,10 @@ from database.helpers import (
     authenticate_student,
     get_student_courses_with_details,
     get_student_by_id,
+    get_instructor_by_id,
+    get_instructor_courses,
+    get_course_by_id,
+    get_course_students_with_details,
 )
 from database.database import ensure_database_initialized
 
@@ -271,6 +275,87 @@ def students_page():
             # Store all students data
             all_students_data = []
 
+            def show_student_courses(student_id):
+                """Show a dialog with the student's registered courses and grades."""
+                # Get student info
+                student = get_student_by_id(student_id)
+                if not student:
+                    ui.notify("Student not found.", color="negative")
+                    return
+                
+                # Get student courses
+                try:
+                    courses = get_student_courses_with_details(student_id)
+                except Exception as e:
+                    ui.notify(f"Error loading courses: {str(e)}", color="negative")
+                    return
+                
+                # Create dialog
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-4xl p-6"):
+                    ui.label(f"Courses for {student['FirstName']} {student['LastName']}").classes(
+                        "text-2xl font-bold mb-4"
+                    )
+                    
+                    with ui.column().classes("w-full gap-4"):
+                        # Student info
+                        with ui.card().classes("w-full p-4 bg-gray-50"):
+                            ui.label("Student Information").classes("text-lg font-semibold mb-2")
+                            ui.label(f"ID: {student['StudentID']}").classes("text-sm")
+                            ui.label(f"Email: {student['Email']}").classes("text-sm")
+                        
+                        # Courses table
+                        if courses:
+                            columns = [
+                                {
+                                    "name": "course_name",
+                                    "label": "Course Name",
+                                    "field": "course_name",
+                                    "sortable": True,
+                                },
+                                {
+                                    "name": "credits",
+                                    "label": "Credits",
+                                    "field": "credits",
+                                    "sortable": True,
+                                    "align": "center",
+                                },
+                                {
+                                    "name": "instructor",
+                                    "label": "Instructor",
+                                    "field": "instructor",
+                                    "sortable": True,
+                                },
+                                {
+                                    "name": "grade",
+                                    "label": "Grade",
+                                    "field": "grade",
+                                    "align": "center",
+                                },
+                            ]
+                            
+                            rows = [
+                                {
+                                    "course_name": c["CourseName"],
+                                    "credits": c["Credits"],
+                                    "instructor": c["InstructorName"],
+                                    "grade": c["Grade"] or "N/A",
+                                }
+                                for c in courses
+                            ]
+                            
+                            ui.table(columns=columns, rows=rows).classes("w-full")
+                            ui.label(f"Total: {len(courses)} courses").classes(
+                                "text-sm text-gray-600 mt-2"
+                            )
+                        else:
+                            ui.label("This student is not registered for any courses.").classes(
+                                "text-gray-500 p-4"
+                            )
+                        
+                        ui.button("Close", on_click=dialog.close).classes("self-end mt-4")
+                
+                dialog.open()
+
             def update_table():
                 """Update the students table."""
                 # Delete all existing content and recreate
@@ -352,9 +437,41 @@ def students_page():
                             for s in filtered_students
                         ]
 
-                        ui.table(columns=columns, rows=rows, row_key="id").classes(
-                            "w-full"
-                        )
+                        # Create table with selection enabled
+                        student_table = ui.table(
+                            columns=columns, 
+                            rows=rows, 
+                            row_key="id"
+                        ).classes("w-full")
+                        
+                        # Enable selection mode (checkbox)
+                        student_table.props('selection="single"')
+                        
+                        # Handle row clicks - NiceGUI passes row data in event.args[1]
+                        def handle_row_click(e):
+                            """Handle row click - extract student ID from event.args[1]."""
+                            try:
+                                # NiceGUI table row click: event.args[1] contains the row data
+                                if hasattr(e, 'args') and e.args and len(e.args) > 1:
+                                    row_data = e.args[1]
+                                    if isinstance(row_data, dict):
+                                        student_id = row_data.get('id')
+                                        if student_id:
+                                            show_student_courses(student_id)
+                                            return
+                                # Fallback: try args[0] if args[1] doesn't exist
+                                elif hasattr(e, 'args') and e.args:
+                                    row_data = e.args[0] if isinstance(e.args[0], dict) else None
+                                    if row_data:
+                                        student_id = row_data.get('id')
+                                        if student_id:
+                                            show_student_courses(student_id)
+                            except Exception:
+                                # Silent fail - row click handler didn't work
+                                pass
+                        
+                        student_table.on('rowClick', handle_row_click)
+                        
                         total_label = f"Showing {len(filtered_students)} of {len(all_students_data)} students"
                         ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
@@ -375,7 +492,7 @@ def students_page():
                 except Exception as e:
                     ui.notify(f"Error loading students: {str(e)}", color="negative")
 
-            # Search input handler - update table as user types
+            # Search input handler
             search_input.on("update:modelValue", lambda: update_table())
 
             # Initial load
@@ -404,6 +521,82 @@ def instructors_page():
 
             # Store all instructors data
             all_instructors_data = []
+
+            def show_instructor_courses(instructor_id):
+                """Show a dialog with the instructor's courses."""
+                # Get instructor info
+                instructor = get_instructor_by_id(instructor_id)
+                if not instructor:
+                    ui.notify("Instructor not found.", color="negative")
+                    return
+                
+                # Get instructor courses
+                try:
+                    courses = get_instructor_courses(instructor_id)
+                except Exception as e:
+                    ui.notify(f"Error loading courses: {str(e)}", color="negative")
+                    return
+                
+                # Create dialog
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-4xl p-6"):
+                    ui.label(f"Courses Taught by {instructor['FirstName']} {instructor['LastName']}").classes(
+                        "text-2xl font-bold mb-4"
+                    )
+                    
+                    with ui.column().classes("w-full gap-4"):
+                        # Instructor info
+                        with ui.card().classes("w-full p-4 bg-gray-50"):
+                            ui.label("Instructor Information").classes("text-lg font-semibold mb-2")
+                            ui.label(f"ID: {instructor['InstructorID']}").classes("text-sm")
+                            ui.label(f"Department: {instructor['Department']}").classes("text-sm")
+                            ui.label(f"Email: {instructor['Email']}").classes("text-sm")
+                        
+                        # Courses table
+                        if courses:
+                            columns = [
+                                {
+                                    "name": "course_name",
+                                    "label": "Course Name",
+                                    "field": "course_name",
+                                    "sortable": True,
+                                },
+                                {
+                                    "name": "credits",
+                                    "label": "Credits",
+                                    "field": "credits",
+                                    "sortable": True,
+                                    "align": "center",
+                                },
+                                {
+                                    "name": "student_count",
+                                    "label": "Enrolled Students",
+                                    "field": "student_count",
+                                    "sortable": True,
+                                    "align": "center",
+                                },
+                            ]
+                            
+                            rows = [
+                                {
+                                    "course_name": c["CourseName"],
+                                    "credits": c["Credits"],
+                                    "student_count": c["StudentCount"] or 0,
+                                }
+                                for c in courses
+                            ]
+                            
+                            ui.table(columns=columns, rows=rows).classes("w-full")
+                            ui.label(f"Total: {len(courses)} courses").classes(
+                                "text-sm text-gray-600 mt-2"
+                            )
+                        else:
+                            ui.label("This instructor is not teaching any courses.").classes(
+                                "text-gray-500 p-4"
+                            )
+                        
+                        ui.button("Close", on_click=dialog.close).classes("self-end mt-4")
+                
+                dialog.open()
 
             def update_table():
                 """Update the instructors table."""
@@ -480,9 +673,38 @@ def instructors_page():
                             for i in filtered_instructors
                         ]
 
-                        ui.table(columns=columns, rows=rows, row_key="id").classes(
+                        instructor_table = ui.table(columns=columns, rows=rows, row_key="id").classes(
                             "w-full"
                         )
+                        
+                        # Enable selection mode (checkbox)
+                        instructor_table.props('selection="single"')
+                        
+                        # Handle row clicks - NiceGUI passes row data in event.args[1]
+                        def handle_row_click(e):
+                            """Handle row click - extract instructor ID from event.args[1]."""
+                            try:
+                                # NiceGUI table row click: event.args[1] contains the row data
+                                if hasattr(e, 'args') and e.args and len(e.args) > 1:
+                                    row_data = e.args[1]
+                                    if isinstance(row_data, dict):
+                                        instructor_id = row_data.get('id')
+                                        if instructor_id:
+                                            show_instructor_courses(instructor_id)
+                                            return
+                                # Fallback: try args[0] if args[1] doesn't exist
+                                elif hasattr(e, 'args') and e.args:
+                                    row_data = e.args[0] if isinstance(e.args[0], dict) else None
+                                    if row_data:
+                                        instructor_id = row_data.get('id')
+                                        if instructor_id:
+                                            show_instructor_courses(instructor_id)
+                            except Exception:
+                                # Silent fail - row click handler didn't work
+                                pass
+                        
+                        instructor_table.on('rowClick', handle_row_click)
+                        
                         total_label = f"Showing {len(filtered_instructors)} of {len(all_instructors_data)} instructors"
                         ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
@@ -533,6 +755,86 @@ def courses_page():
             # Store all courses and instructors data
             all_courses_data = []
             all_instructors_data = []
+
+            def show_course_students(course_id):
+                """Show a dialog with all students enrolled in the course and their grades."""
+                # Get course info
+                course = get_course_by_id(course_id)
+                if not course:
+                    ui.notify("Course not found.", color="negative")
+                    return
+                
+                # Get instructor name for display
+                instructors_dict = {
+                    inst["InstructorID"]: inst for inst in all_instructors_data
+                }
+                instructor_name = get_instructor_name(course["InstructorID"], instructors_dict)
+                
+                # Get enrolled students
+                try:
+                    students = get_course_students_with_details(course_id)
+                except Exception as e:
+                    ui.notify(f"Error loading students: {str(e)}", color="negative")
+                    return
+                
+                # Create dialog
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-4xl p-6"):
+                    ui.label(f"Students Enrolled in {course['CourseName']}").classes(
+                        "text-2xl font-bold mb-4"
+                    )
+                    
+                    with ui.column().classes("w-full gap-4"):
+                        # Course info
+                        with ui.card().classes("w-full p-4 bg-gray-50"):
+                            ui.label("Course Information").classes("text-lg font-semibold mb-2")
+                            ui.label(f"Course ID: {course['CourseID']}").classes("text-sm")
+                            ui.label(f"Credits: {course['Credits']}").classes("text-sm")
+                            ui.label(f"Instructor: {instructor_name}").classes("text-sm")
+                        
+                        # Students table
+                        if students:
+                            columns = [
+                                {
+                                    "name": "student_name",
+                                    "label": "Student Name",
+                                    "field": "student_name",
+                                    "sortable": True,
+                                },
+                                {
+                                    "name": "email",
+                                    "label": "Email",
+                                    "field": "email",
+                                    "sortable": True,
+                                },
+                                {
+                                    "name": "grade",
+                                    "label": "Grade",
+                                    "field": "grade",
+                                    "align": "center",
+                                },
+                            ]
+                            
+                            rows = [
+                                {
+                                    "student_name": s["StudentName"],
+                                    "email": s["Email"],
+                                    "grade": s["Grade"] or "N/A",
+                                }
+                                for s in students
+                            ]
+                            
+                            ui.table(columns=columns, rows=rows).classes("w-full")
+                            ui.label(f"Total: {len(students)} students enrolled").classes(
+                                "text-sm text-gray-600 mt-2"
+                            )
+                        else:
+                            ui.label("No students are enrolled in this course.").classes(
+                                "text-gray-500 p-4"
+                            )
+                        
+                        ui.button("Close", on_click=dialog.close).classes("self-end mt-4")
+                
+                dialog.open()
 
             def update_table():
                 """Update the courses table."""
@@ -617,9 +919,38 @@ def courses_page():
                             for c in filtered_courses
                         ]
 
-                        ui.table(columns=columns, rows=rows, row_key="id").classes(
+                        course_table = ui.table(columns=columns, rows=rows, row_key="id").classes(
                             "w-full"
                         )
+                        
+                        # Enable selection mode (checkbox)
+                        course_table.props('selection="single"')
+                        
+                        # Handle row clicks - NiceGUI passes row data in event.args[1]
+                        def handle_row_click(e):
+                            """Handle row click - extract course ID from event.args[1]."""
+                            try:
+                                # NiceGUI table row click: event.args[1] contains the row data
+                                if hasattr(e, 'args') and e.args and len(e.args) > 1:
+                                    row_data = e.args[1]
+                                    if isinstance(row_data, dict):
+                                        course_id = row_data.get('id')
+                                        if course_id:
+                                            show_course_students(course_id)
+                                            return
+                                # Fallback: try args[0] if args[1] doesn't exist
+                                elif hasattr(e, 'args') and e.args:
+                                    row_data = e.args[0] if isinstance(e.args[0], dict) else None
+                                    if row_data:
+                                        course_id = row_data.get('id')
+                                        if course_id:
+                                            show_course_students(course_id)
+                            except Exception:
+                                # Silent fail - row click handler didn't work
+                                pass
+                        
+                        course_table.on('rowClick', handle_row_click)
+                        
                         total_label = f"Showing {len(filtered_courses)} of {len(all_courses_data)} courses"
                         ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"

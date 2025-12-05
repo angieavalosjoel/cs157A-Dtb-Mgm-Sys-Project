@@ -186,3 +186,75 @@ def get_student_courses_with_details(student_id):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def get_instructor_by_id(instructor_id):
+    """Get an instructor by their ID."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM instructors WHERE InstructorID = ?", (instructor_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    return None
+
+
+def get_instructor_courses(instructor_id):
+    """Get all courses taught by an instructor."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT 
+            c.CourseID,
+            c.CourseName,
+            c.Credits,
+            COUNT(e.StudentID) AS StudentCount
+        FROM courses c
+        LEFT JOIN enrollments e ON c.CourseID = e.CourseID
+        WHERE c.InstructorID = ?
+        GROUP BY c.CourseID, c.CourseName, c.Credits
+        ORDER BY c.CourseName
+    """,
+        (instructor_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_course_by_id(course_id):
+    """Get a course by its ID."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM courses WHERE CourseID = ?", (course_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    return None
+
+
+def get_course_students_with_details(course_id):
+    """Get all students enrolled in a course with their grades."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT 
+            e.EnrollmentID,
+            e.Grade,
+            s.StudentID,
+            s.FirstName || ' ' || s.LastName AS StudentName,
+            s.Email
+        FROM enrollments e
+        JOIN students s ON e.StudentID = s.StudentID
+        WHERE e.CourseID = ?
+        ORDER BY s.LastName, s.FirstName
+    """,
+        (course_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
