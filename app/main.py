@@ -20,6 +20,9 @@ from database.helpers import (
     get_instructor_courses,
     get_course_by_id,
     get_course_students_with_details,
+    delete_student,
+    delete_instructor,
+    delete_course,
 )
 from database.database import ensure_database_initialized
 
@@ -264,16 +267,36 @@ def students_page():
     # Create a refreshable container for the table
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Search input
-            search_input = ui.input(
-                "Search", placeholder="Search by name, email, username, or ID..."
-            ).classes("w-full mb-4").props("clearable")
+            # Delete button and search input
+            with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
+                search_input = ui.input(
+                    "Search", placeholder="Search by name, email, username, or ID..."
+                ).classes("flex-1").props("clearable")
             
             # Container that will hold the table - we'll store a reference to recreate it
             table_area = ui.column().classes("w-full")
+            
+            # Store table reference for delete functionality
+            student_table_ref = None
 
             # Store all students data
             all_students_data = []
+
+            def handle_delete_student():
+                """Delete the selected student."""
+                if not student_table_ref:
+                    return
+                
+                # Get selected row
+                selected = student_table_ref.selected if hasattr(student_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    return
+                
+                student_id = selected[0].get('id')
+                if student_id:
+                    delete_student(student_id)
+                    load_data()
 
             def show_student_courses(student_id):
                 """Show a dialog with the student's registered courses and grades."""
@@ -444,6 +467,10 @@ def students_page():
                             row_key="id"
                         ).classes("w-full")
                         
+                        # Store table reference for delete functionality
+                        nonlocal student_table_ref
+                        student_table_ref = student_table
+                        
                         # Enable selection mode (checkbox)
                         student_table.props('selection="single"')
                         
@@ -472,6 +499,9 @@ def students_page():
                         
                         student_table.on('rowClick', handle_row_click)
                         
+                        # Connect delete button
+                        delete_button.on_click(handle_delete_student)
+                        
                         total_label = f"Showing {len(filtered_students)} of {len(all_students_data)} students"
                         ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
@@ -492,7 +522,7 @@ def students_page():
                 except Exception as e:
                     ui.notify(f"Error loading students: {str(e)}", color="negative")
 
-            # Search input handler
+            # Search input handler - update table as user types
             search_input.on("update:modelValue", lambda: update_table())
 
             # Initial load
@@ -512,15 +542,35 @@ def instructors_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Search input
-            search_input = ui.input(
-                "Search", placeholder="Search by name, email, department, or ID..."
-            ).classes("w-full mb-4").props("clearable")
+            # Delete button and search input
+            with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
+                search_input = ui.input(
+                    "Search", placeholder="Search by name, email, department, or ID..."
+                ).classes("flex-1").props("clearable")
             
             table_area = ui.column().classes("w-full")
 
             # Store all instructors data
             all_instructors_data = []
+            
+            # Store table reference for delete functionality
+            instructor_table_ref = None
+
+            def handle_delete_instructor():
+                """Delete the selected instructor."""
+                if not instructor_table_ref:
+                    return
+                
+                # Get selected row
+                selected = instructor_table_ref.selected if hasattr(instructor_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    return
+                
+                instructor_id = selected[0].get('id')
+                if instructor_id:
+                    delete_instructor(instructor_id)
+                    load_data()
 
             def show_instructor_courses(instructor_id):
                 """Show a dialog with the instructor's courses."""
@@ -677,6 +727,10 @@ def instructors_page():
                             "w-full"
                         )
                         
+                        # Store table reference for delete functionality
+                        nonlocal instructor_table_ref
+                        instructor_table_ref = instructor_table
+                        
                         # Enable selection mode (checkbox)
                         instructor_table.props('selection="single"')
                         
@@ -704,6 +758,9 @@ def instructors_page():
                                 pass
                         
                         instructor_table.on('rowClick', handle_row_click)
+                        
+                        # Connect delete button
+                        delete_button.on_click(handle_delete_instructor)
                         
                         total_label = f"Showing {len(filtered_instructors)} of {len(all_instructors_data)} instructors"
                         ui.label(total_label).classes(
@@ -745,16 +802,36 @@ def courses_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Search input
-            search_input = ui.input(
-                "Search", placeholder="Search by course name, instructor, credits, or ID..."
-            ).classes("w-full mb-4").props("clearable")
+            # Delete button and search input
+            with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
+                search_input = ui.input(
+                    "Search", placeholder="Search by course name, instructor, credits, or ID..."
+                ).classes("flex-1").props("clearable")
             
             table_area = ui.column().classes("w-full")
 
             # Store all courses and instructors data
             all_courses_data = []
             all_instructors_data = []
+            
+            # Store table reference for delete functionality
+            course_table_ref = None
+
+            def handle_delete_course():
+                """Delete the selected course."""
+                if not course_table_ref:
+                    return
+                
+                # Get selected row
+                selected = course_table_ref.selected if hasattr(course_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    return
+                
+                course_id = selected[0].get('id')
+                if course_id:
+                    delete_course(course_id)
+                    load_data()
 
             def show_course_students(course_id):
                 """Show a dialog with all students enrolled in the course and their grades."""
@@ -923,6 +1000,10 @@ def courses_page():
                             "w-full"
                         )
                         
+                        # Store table reference for delete functionality
+                        nonlocal course_table_ref
+                        course_table_ref = course_table
+                        
                         # Enable selection mode (checkbox)
                         course_table.props('selection="single"')
                         
@@ -950,6 +1031,9 @@ def courses_page():
                                 pass
                         
                         course_table.on('rowClick', handle_row_click)
+                        
+                        # Connect delete button
+                        delete_button.on_click(handle_delete_course)
                         
                         total_label = f"Showing {len(filtered_courses)} of {len(all_courses_data)} courses"
                         ui.label(total_label).classes(

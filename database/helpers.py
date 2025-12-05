@@ -36,11 +36,20 @@ def update_student(student_id, first_name, last_name, email, username, password)
 
 
 def delete_student(student_id):
+    """Delete a student and all their enrollments."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM students WHERE StudentID = ?", (student_id,))
-    conn.commit()
-    conn.close()
+    try:
+        # First, delete all enrollments for this student
+        cursor.execute("DELETE FROM enrollments WHERE StudentID = ?", (student_id,))
+        # Then delete the student
+        cursor.execute("DELETE FROM students WHERE StudentID = ?", (student_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 
 # Instructors
@@ -62,6 +71,23 @@ def add_instructor(first_name, last_name, department, email):
     )
     conn.commit()
     conn.close()
+
+
+def delete_instructor(instructor_id):
+    """Delete an instructor and set InstructorID to NULL in courses they teach."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # First, set InstructorID to NULL in all courses taught by this instructor
+        cursor.execute("UPDATE courses SET InstructorID = NULL WHERE InstructorID = ?", (instructor_id,))
+        # Then delete the instructor
+        cursor.execute("DELETE FROM instructors WHERE InstructorID = ?", (instructor_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 
 # Courses
@@ -86,11 +112,20 @@ def add_course(name, credits, instructor_id):
 
 
 def delete_course(course_id):
+    """Delete a course and all its enrollments."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM courses WHERE CourseID = ?", (course_id,))
-    conn.commit()
-    conn.close()
+    try:
+        # First, delete all enrollments for this course
+        cursor.execute("DELETE FROM enrollments WHERE CourseID = ?", (course_id,))
+        # Then delete the course
+        cursor.execute("DELETE FROM courses WHERE CourseID = ?", (course_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 
 # Enrollments
