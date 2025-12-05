@@ -1,0 +1,6 @@
+__pycache__/
+.vscode/
+.venv/
+misc.txt
+test/
+student_management.db
