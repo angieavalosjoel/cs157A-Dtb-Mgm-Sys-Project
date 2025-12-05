@@ -30,7 +30,7 @@ CREATE TABLE courses (
     CourseID INTEGER PRIMARY KEY AUTOINCREMENT,
     CourseName TEXT NOT NULL,
     Credits INTEGER NOT NULL,
-    InstructorID INTEGER NOT NULL,
+    InstructorID INTEGER,
     FOREIGN KEY (InstructorID) REFERENCES instructors(InstructorID)
 );
 

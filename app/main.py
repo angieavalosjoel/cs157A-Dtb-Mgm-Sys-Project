@@ -240,9 +240,6 @@ def student_dashboard():
                             "text-red-500 p-4"
                         )
 
-            refresh_button = ui.button(
-                "Refresh", icon="refresh", on_click=load_courses
-            ).classes("self-end mb-4")
             load_courses()
 
     except Exception as e:
@@ -263,13 +260,16 @@ def students_page():
     # Create a refreshable container for the table
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Refresh button
-            refresh_button = ui.button("Refresh", icon="refresh").classes(
-                "self-end mb-4"
-            )
-
+            # Search input
+            search_input = ui.input(
+                "Search", placeholder="Search by name, email, username, or ID..."
+            ).classes("w-full mb-4").props("clearable")
+            
             # Container that will hold the table - we'll store a reference to recreate it
             table_area = ui.column().classes("w-full")
+
+            # Store all students data
+            all_students_data = []
 
             def update_table():
                 """Update the students table."""
@@ -277,12 +277,32 @@ def students_page():
                 table_area.clear()
 
                 try:
-                    students = get_all_students()
+                    # Get search term
+                    search_term = search_input.value.lower().strip() if search_input.value else ""
+                    
+                    # Filter students based on search
+                    if search_term:
+                        filtered_students = [
+                            s for s in all_students_data
+                            if search_term in str(s["StudentID"]).lower()
+                            or search_term in s["FirstName"].lower()
+                            or search_term in s["LastName"].lower()
+                            or search_term in s["Email"].lower()
+                            or search_term in s["Username"].lower()
+                        ]
+                    else:
+                        filtered_students = all_students_data
 
                     # Add new content directly to the cleared container
                     with table_area:
-                        if not students:
+                        if not all_students_data:
                             ui.label("No students found.").classes("text-gray-500 p-4")
+                            return
+
+                        if not filtered_students:
+                            ui.label(f'No students found matching "{search_input.value}".').classes(
+                                "text-gray-500 p-4"
+                            )
                             return
 
                         # Prepare data for table
@@ -329,13 +349,14 @@ def students_page():
                                 "username": s["Username"],
                                 "password": s["Password"],
                             }
-                            for s in students
+                            for s in filtered_students
                         ]
 
                         ui.table(columns=columns, rows=rows, row_key="id").classes(
                             "w-full"
                         )
-                        ui.label(f"Total: {len(students)} students").classes(
+                        total_label = f"Showing {len(filtered_students)} of {len(all_students_data)} students"
+                        ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
                         )
 
@@ -345,9 +366,20 @@ def students_page():
                             "text-red-500 p-4"
                         )
 
-            refresh_button.on_click(update_table)
+            def load_data():
+                """Load all students data."""
+                try:
+                    all_students_data.clear()
+                    all_students_data.extend(get_all_students())
+                    update_table()
+                except Exception as e:
+                    ui.notify(f"Error loading students: {str(e)}", color="negative")
+
+            # Search input handler - update table as user types
+            search_input.on("update:modelValue", lambda: update_table())
+
             # Initial load
-            update_table()
+            load_data()
 
 
 # Instructors page (Admin)
@@ -363,21 +395,46 @@ def instructors_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            refresh_button = ui.button("Refresh", icon="refresh").classes(
-                "self-end mb-4"
-            )
+            # Search input
+            search_input = ui.input(
+                "Search", placeholder="Search by name, email, department, or ID..."
+            ).classes("w-full mb-4").props("clearable")
+            
             table_area = ui.column().classes("w-full")
+
+            # Store all instructors data
+            all_instructors_data = []
 
             def update_table():
                 """Update the instructors table."""
                 table_area.clear()
 
                 try:
-                    instructors = get_all_instructors()
+                    # Get search term
+                    search_term = search_input.value.lower().strip() if search_input.value else ""
+                    
+                    # Filter instructors based on search
+                    if search_term:
+                        filtered_instructors = [
+                            i for i in all_instructors_data
+                            if search_term in str(i["InstructorID"]).lower()
+                            or search_term in i["FirstName"].lower()
+                            or search_term in i["LastName"].lower()
+                            or search_term in i["Email"].lower()
+                            or search_term in i["Department"].lower()
+                        ]
+                    else:
+                        filtered_instructors = all_instructors_data
 
                     with table_area:
-                        if not instructors:
+                        if not all_instructors_data:
                             ui.label("No instructors found.").classes(
+                                "text-gray-500 p-4"
+                            )
+                            return
+
+                        if not filtered_instructors:
+                            ui.label(f'No instructors found matching "{search_input.value}".').classes(
                                 "text-gray-500 p-4"
                             )
                             return
@@ -420,13 +477,14 @@ def instructors_page():
                                 "department": i["Department"],
                                 "email": i["Email"],
                             }
-                            for i in instructors
+                            for i in filtered_instructors
                         ]
 
                         ui.table(columns=columns, rows=rows, row_key="id").classes(
                             "w-full"
                         )
-                        ui.label(f"Total: {len(instructors)} instructors").classes(
+                        total_label = f"Showing {len(filtered_instructors)} of {len(all_instructors_data)} instructors"
+                        ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
                         )
 
@@ -436,8 +494,20 @@ def instructors_page():
                             "text-red-500 p-4"
                         )
 
-            refresh_button.on_click(update_table)
-            update_table()
+            def load_data():
+                """Load all instructors data."""
+                try:
+                    all_instructors_data.clear()
+                    all_instructors_data.extend(get_all_instructors())
+                    update_table()
+                except Exception as e:
+                    ui.notify(f"Error loading instructors: {str(e)}", color="negative")
+
+            # Search input handler - update table as user types
+            search_input.on("update:modelValue", lambda: update_table())
+
+            # Initial load
+            load_data()
 
 
 # Courses page (Admin)
@@ -453,27 +523,56 @@ def courses_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            refresh_button = ui.button("Refresh", icon="refresh").classes(
-                "self-end mb-4"
-            )
+            # Search input
+            search_input = ui.input(
+                "Search", placeholder="Search by course name, instructor, credits, or ID..."
+            ).classes("w-full mb-4").props("clearable")
+            
             table_area = ui.column().classes("w-full")
+
+            # Store all courses and instructors data
+            all_courses_data = []
+            all_instructors_data = []
 
             def update_table():
                 """Update the courses table."""
                 table_area.clear()
 
                 try:
-                    courses = get_all_courses()
-                    instructors = get_all_instructors()
-
+                    # Get search term
+                    search_term = search_input.value.lower().strip() if search_input.value else ""
+                    
                     # Create a dictionary for quick instructor lookup
                     instructors_dict = {
-                        inst["InstructorID"]: inst for inst in instructors
+                        inst["InstructorID"]: inst for inst in all_instructors_data
                     }
+                    
+                    # Filter courses based on search
+                    if search_term:
+                        filtered_courses = []
+                        for c in all_courses_data:
+                            course_name = c["CourseName"].lower()
+                            credits = str(c["Credits"]).lower()
+                            course_id = str(c["CourseID"]).lower()
+                            instructor_name = get_instructor_name(c["InstructorID"], instructors_dict).lower()
+                            
+                            if (search_term in course_name or
+                                search_term in credits or
+                                search_term in course_id or
+                                search_term in instructor_name):
+                                filtered_courses.append(c)
+                    else:
+                        filtered_courses = all_courses_data
 
                     with table_area:
-                        if not courses:
+                        if not all_courses_data:
                             ui.label("No courses found.").classes("text-gray-500 p-4")
+                            return
+
+                        if not filtered_courses:
+                            ui.label(f'No courses found matching "{search_input.value}".').classes(
+                                "text-gray-500 p-4"
+                            )
                             return
 
                         # Prepare data for table
@@ -515,13 +614,14 @@ def courses_page():
                                     c["InstructorID"], instructors_dict
                                 ),
                             }
-                            for c in courses
+                            for c in filtered_courses
                         ]
 
                         ui.table(columns=columns, rows=rows, row_key="id").classes(
                             "w-full"
                         )
-                        ui.label(f"Total: {len(courses)} courses").classes(
+                        total_label = f"Showing {len(filtered_courses)} of {len(all_courses_data)} courses"
+                        ui.label(total_label).classes(
                             "text-sm text-gray-600 mt-4"
                         )
 
@@ -531,8 +631,22 @@ def courses_page():
                             "text-red-500 p-4"
                         )
 
-            refresh_button.on_click(update_table)
-            update_table()
+            def load_data():
+                """Load all courses and instructors data."""
+                try:
+                    all_courses_data.clear()
+                    all_instructors_data.clear()
+                    all_courses_data.extend(get_all_courses())
+                    all_instructors_data.extend(get_all_instructors())
+                    update_table()
+                except Exception as e:
+                    ui.notify(f"Error loading courses: {str(e)}", color="negative")
+
+            # Search input handler - update table as user types
+            search_input.on("update:modelValue", lambda: update_table())
+
+            # Initial load
+            load_data()
 
 
 if __name__ in {"__main__", "__mp_main__"}:
