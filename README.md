@@ -26,6 +26,7 @@ To start the application, run the following command from the project root direct
 ```bash
 python app/main.py
 ```
+**Important -** The command must be run from the root directory to resolve python imports
 
 The application will start a web server, and you can access it through your web browser. The default URL is typically `http://localhost:8080` (check the console output for the exact address).
 
