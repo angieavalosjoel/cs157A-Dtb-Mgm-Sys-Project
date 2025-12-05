@@ -20,7 +20,9 @@ CREATE TABLE students (
     StudentID INTEGER PRIMARY KEY AUTOINCREMENT,
     FirstName TEXT NOT NULL,
     LastName TEXT NOT NULL,
-    Email TEXT NOT NULL
+    Email TEXT NOT NULL,
+    Username TEXT NOT NULL,
+    Password TEXT NOT NULL
 );
 
 -- Courses table

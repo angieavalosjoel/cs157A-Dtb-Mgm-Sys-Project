@@ -1,24 +1,24 @@
 -- Initialize Data for Student Management System
 
 -- Insert students
-INSERT INTO students (FirstName, LastName, Email) VALUES
-('Alice', 'Anderson', 'alice.anderson@school.edu'),
-('Bob', 'Brown', 'bob.brown@school.edu'),
-('Charlie', 'Chen', 'charlie.chen@school.edu'),
-('Diana', 'Davis', 'diana.davis@school.edu'),
-('Edward', 'Evans', 'edward.evans@school.edu'),
-('Fiona', 'Foster', 'fiona.foster@school.edu'),
-('George', 'Garcia', 'george.garcia@school.edu'),
-('Hannah', 'Harris', 'hannah.harris@school.edu'),
-('Ian', 'Ivanov', 'ian.ivanov@school.edu'),
-('Julia', 'Johnson', 'julia.johnson@school.edu'),
-('Kevin', 'Kim', 'kevin.kim@school.edu'),
-('Laura', 'Lee', 'laura.lee@school.edu'),
-('Michael', 'Martinez', 'michael.martinez@school.edu'),
-('Nancy', 'Nguyen', 'nancy.nguyen@school.edu'),
-('Oliver', 'O''Connor', 'oliver.oconnor@school.edu'),
-('Patricia', 'Parker', 'patricia.parker@school.edu'),
-('Quinn', 'Quinn', 'quinn.quinn@school.edu');
+INSERT INTO students (FirstName, LastName, Email, Username, Password) VALUES
+('Alice', 'Anderson', 'alice.anderson@school.edu', 'alice.anderson', 'Pass123!Alice45'),
+('Bob', 'Brown', 'bob.brown@school.edu', 'bob.brown', 'BrownBob!2024'),
+('Charlie', 'Chen', 'charlie.chen@school.edu', 'charlie.chen', 'ChenChar!7890'),
+('Diana', 'Davis', 'diana.davis@school.edu', 'diana.davis', 'DianaPass!2024'),
+('Edward', 'Evans', 'edward.evans@school.edu', 'edward.evans', 'EdEvans!12345'),
+('Fiona', 'Foster', 'fiona.foster@school.edu', 'fiona.foster', 'FionaFost!789'),
+('George', 'Garcia', 'george.garcia@school.edu', 'george.garcia', 'GeorgeGar!2024'),
+('Hannah', 'Harris', 'hannah.harris@school.edu', 'hannah.harris', 'HannahH!1234'),
+('Ian', 'Ivanov', 'ian.ivanov@school.edu', 'ian.ivanov', 'IanIvan!5678'),
+('Julia', 'Johnson', 'julia.johnson@school.edu', 'julia.johnson', 'JuliaJohn!90'),
+('Kevin', 'Kim', 'kevin.kim@school.edu', 'kevin.kim', 'KevinKim!2024'),
+('Laura', 'Lee', 'laura.lee@school.edu', 'laura.lee', 'LauraLee!123'),
+('Michael', 'Martinez', 'michael.martinez@school.edu', 'michael.martinez', 'MikeMart!456'),
+('Nancy', 'Nguyen', 'nancy.nguyen@school.edu', 'nancy.nguyen', 'NancyNg!7890'),
+('Oliver', 'O''Connor', 'oliver.oconnor@school.edu', 'oliver.oconnor', 'OliveOc!1234'),
+('Patricia', 'Parker', 'patricia.parker@school.edu', 'patricia.parker', 'PatPark!567'),
+('Quinn', 'Quinn', 'quinn.quinn@school.edu', 'quinn.quinn', 'QuinnQu!8901');
 
 -- Insert instructors
 INSERT INTO instructors (FirstName, LastName, Department, Email) VALUES

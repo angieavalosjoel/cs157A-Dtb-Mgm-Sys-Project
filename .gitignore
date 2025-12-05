@@ -4,3 +4,4 @@ __pycache__/
 misc.txt
 test/
 student_management.db
+.nicegui/
