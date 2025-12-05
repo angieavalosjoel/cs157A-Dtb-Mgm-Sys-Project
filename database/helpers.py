@@ -73,6 +73,17 @@ def add_instructor(first_name, last_name, department, email):
     conn.close()
 
 
+def update_instructor(instructor_id, first_name, last_name, department, email):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE instructors SET FirstName = ?, LastName = ?, Department = ?, Email = ? WHERE InstructorID = ?",
+        (first_name, last_name, department, email, instructor_id),
+    )
+    conn.commit()
+    conn.close()
+
+
 def delete_instructor(instructor_id):
     """Delete an instructor and set InstructorID to NULL in courses they teach."""
     conn = get_connection()
@@ -106,6 +117,17 @@ def add_course(name, credits, instructor_id):
     cursor.execute(
         "INSERT INTO courses (CourseName, Credits, InstructorID) VALUES (?, ?, ?)",
         (name, credits, instructor_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_course(course_id, name, credits, instructor_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE courses SET CourseName = ?, Credits = ?, InstructorID = ? WHERE CourseID = ?",
+        (name, credits, instructor_id, course_id),
     )
     conn.commit()
     conn.close()

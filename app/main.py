@@ -20,8 +20,14 @@ from database.helpers import (
     get_instructor_courses,
     get_course_by_id,
     get_course_students_with_details,
+    add_student,
+    update_student,
     delete_student,
+    add_instructor,
+    update_instructor,
     delete_instructor,
+    add_course,
+    update_course,
     delete_course,
 )
 from database.database import ensure_database_initialized
@@ -267,8 +273,10 @@ def students_page():
     # Create a refreshable container for the table
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Delete button and search input
+            # Action buttons and search input
             with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                insert_button = ui.button("Insert", icon="add").classes("bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600")
+                update_button = ui.button("Update Selected", icon="edit").classes("bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600")
                 delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
                 search_input = ui.input(
                     "Search", placeholder="Search by name, email, username, or ID..."
@@ -297,6 +305,88 @@ def students_page():
                 if student_id:
                     delete_student(student_id)
                     load_data()
+
+            def handle_insert_student():
+                """Open dialog to insert a new student."""
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Add New Student").classes("text-2xl font-bold mb-4")
+                    
+                    first_name_input = ui.input("First Name", placeholder="Enter first name").classes("w-full")
+                    last_name_input = ui.input("Last Name", placeholder="Enter last name").classes("w-full")
+                    email_input = ui.input("Email", placeholder="Enter email").classes("w-full")
+                    username_input = ui.input("Username", placeholder="Enter username").classes("w-full")
+                    password_input = ui.input("Password", placeholder="Enter password").classes("w-full").props("type=password")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                add_student(
+                                    first_name_input.value,
+                                    last_name_input.value,
+                                    email_input.value,
+                                    username_input.value,
+                                    password_input.value
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Student added successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error adding student: {str(e)}", color="negative")
+                        ui.button("Add", on_click=handle_submit).classes("flex-1 bg-green-500 text-white")
+                
+                dialog.open()
+
+            def handle_update_student():
+                """Open dialog to update the selected student."""
+                if not student_table_ref:
+                    return
+                
+                # Get selected row
+                selected = student_table_ref.selected if hasattr(student_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    ui.notify("Please select a student to update.", color="warning")
+                    return
+                
+                student_id = selected[0].get('id')
+                if not student_id:
+                    return
+                
+                # Get current student data
+                student = get_student_by_id(student_id)
+                if not student:
+                    ui.notify("Student not found.", color="negative")
+                    return
+                
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Update Student").classes("text-2xl font-bold mb-4")
+                    
+                    first_name_input = ui.input("First Name", value=student['FirstName']).classes("w-full")
+                    last_name_input = ui.input("Last Name", value=student['LastName']).classes("w-full")
+                    email_input = ui.input("Email", value=student['Email']).classes("w-full")
+                    username_input = ui.input("Username", value=student['Username']).classes("w-full")
+                    password_input = ui.input("Password", value=student['Password']).classes("w-full").props("type=password")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                update_student(
+                                    student_id,
+                                    first_name_input.value,
+                                    last_name_input.value,
+                                    email_input.value,
+                                    username_input.value,
+                                    password_input.value
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Student updated successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error updating student: {str(e)}", color="negative")
+                        ui.button("Update", on_click=handle_submit).classes("flex-1 bg-blue-500 text-white")
+                
+                dialog.open()
 
             def show_student_courses(student_id):
                 """Show a dialog with the student's registered courses and grades."""
@@ -499,7 +589,9 @@ def students_page():
                         
                         student_table.on('rowClick', handle_row_click)
                         
-                        # Connect delete button
+                        # Connect action buttons
+                        insert_button.on_click(handle_insert_student)
+                        update_button.on_click(handle_update_student)
                         delete_button.on_click(handle_delete_student)
                         
                         total_label = f"Showing {len(filtered_students)} of {len(all_students_data)} students"
@@ -542,8 +634,10 @@ def instructors_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Delete button and search input
+            # Action buttons and search input
             with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                insert_button = ui.button("Insert", icon="add").classes("bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600")
+                update_button = ui.button("Update Selected", icon="edit").classes("bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600")
                 delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
                 search_input = ui.input(
                     "Search", placeholder="Search by name, email, department, or ID..."
@@ -556,6 +650,84 @@ def instructors_page():
             
             # Store table reference for delete functionality
             instructor_table_ref = None
+
+            def handle_insert_instructor():
+                """Open dialog to insert a new instructor."""
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Add New Instructor").classes("text-2xl font-bold mb-4")
+                    
+                    first_name_input = ui.input("First Name", placeholder="Enter first name").classes("w-full")
+                    last_name_input = ui.input("Last Name", placeholder="Enter last name").classes("w-full")
+                    department_input = ui.input("Department", placeholder="Enter department").classes("w-full")
+                    email_input = ui.input("Email", placeholder="Enter email").classes("w-full")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                add_instructor(
+                                    first_name_input.value,
+                                    last_name_input.value,
+                                    department_input.value,
+                                    email_input.value
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Instructor added successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error adding instructor: {str(e)}", color="negative")
+                        ui.button("Add", on_click=handle_submit).classes("flex-1 bg-green-500 text-white")
+                
+                dialog.open()
+
+            def handle_update_instructor():
+                """Open dialog to update the selected instructor."""
+                if not instructor_table_ref:
+                    return
+                
+                # Get selected row
+                selected = instructor_table_ref.selected if hasattr(instructor_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    ui.notify("Please select an instructor to update.", color="warning")
+                    return
+                
+                instructor_id = selected[0].get('id')
+                if not instructor_id:
+                    return
+                
+                # Get current instructor data
+                instructor = get_instructor_by_id(instructor_id)
+                if not instructor:
+                    ui.notify("Instructor not found.", color="negative")
+                    return
+                
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Update Instructor").classes("text-2xl font-bold mb-4")
+                    
+                    first_name_input = ui.input("First Name", value=instructor['FirstName']).classes("w-full")
+                    last_name_input = ui.input("Last Name", value=instructor['LastName']).classes("w-full")
+                    department_input = ui.input("Department", value=instructor['Department']).classes("w-full")
+                    email_input = ui.input("Email", value=instructor['Email']).classes("w-full")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                update_instructor(
+                                    instructor_id,
+                                    first_name_input.value,
+                                    last_name_input.value,
+                                    department_input.value,
+                                    email_input.value
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Instructor updated successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error updating instructor: {str(e)}", color="negative")
+                        ui.button("Update", on_click=handle_submit).classes("flex-1 bg-blue-500 text-white")
+                
+                dialog.open()
 
             def handle_delete_instructor():
                 """Delete the selected instructor."""
@@ -759,7 +931,9 @@ def instructors_page():
                         
                         instructor_table.on('rowClick', handle_row_click)
                         
-                        # Connect delete button
+                        # Connect action buttons
+                        insert_button.on_click(handle_insert_instructor)
+                        update_button.on_click(handle_update_instructor)
                         delete_button.on_click(handle_delete_instructor)
                         
                         total_label = f"Showing {len(filtered_instructors)} of {len(all_instructors_data)} instructors"
@@ -802,8 +976,10 @@ def courses_page():
 
     with ui.card().classes("w-full max-w-6xl mx-auto shadow-lg"):
         with ui.column().classes("w-full p-4"):
-            # Delete button and search input
+            # Action buttons and search input
             with ui.row().classes("w-full gap-4 mb-4 items-center"):
+                insert_button = ui.button("Insert", icon="add").classes("bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600")
+                update_button = ui.button("Update Selected", icon="edit").classes("bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600")
                 delete_button = ui.button("Delete Selected", icon="delete").classes("bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600")
                 search_input = ui.input(
                     "Search", placeholder="Search by course name, instructor, credits, or ID..."
@@ -817,6 +993,104 @@ def courses_page():
             
             # Store table reference for delete functionality
             course_table_ref = None
+
+            def handle_insert_course():
+                """Open dialog to insert a new course."""
+                # Load instructors for dropdown
+                instructors = get_all_instructors()
+                
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Add New Course").classes("text-2xl font-bold mb-4")
+                    
+                    name_input = ui.input("Course Name", placeholder="Enter course name").classes("w-full")
+                    credits_input = ui.number("Credits", value=3, min=1, max=10).classes("w-full")
+                    
+                    # Instructor dropdown
+                    instructor_options = {inst['InstructorID']: f"{inst['FirstName']} {inst['LastName']}" for inst in instructors}
+                    instructor_options[''] = "No Instructor"  # Use empty string for None
+                    instructor_select = ui.select(
+                        options=instructor_options,
+                        label="Instructor"
+                    ).classes("w-full")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                instructor_id = instructor_select.value if instructor_select.value and instructor_select.value != '' else None
+                                add_course(
+                                    name_input.value,
+                                    int(credits_input.value),
+                                    instructor_id
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Course added successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error adding course: {str(e)}", color="negative")
+                        ui.button("Add", on_click=handle_submit).classes("flex-1 bg-green-500 text-white")
+                
+                dialog.open()
+
+            def handle_update_course():
+                """Open dialog to update the selected course."""
+                if not course_table_ref:
+                    return
+                
+                # Get selected row
+                selected = course_table_ref.selected if hasattr(course_table_ref, 'selected') else []
+                if not selected or len(selected) == 0:
+                    ui.notify("Please select a course to update.", color="warning")
+                    return
+                
+                course_id = selected[0].get('id')
+                if not course_id:
+                    return
+                
+                # Get current course data
+                course = get_course_by_id(course_id)
+                if not course:
+                    ui.notify("Course not found.", color="negative")
+                    return
+                
+                # Load instructors for dropdown
+                instructors = get_all_instructors()
+                
+                with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-6"):
+                    ui.label("Update Course").classes("text-2xl font-bold mb-4")
+                    
+                    name_input = ui.input("Course Name", value=course['CourseName']).classes("w-full")
+                    credits_input = ui.number("Credits", value=course['Credits'], min=1, max=10).classes("w-full")
+                    
+                    # Instructor dropdown
+                    instructor_options = {inst['InstructorID']: f"{inst['FirstName']} {inst['LastName']}" for inst in instructors}
+                    instructor_options[''] = "No Instructor"  # Use empty string for None
+                    current_instructor = course.get('InstructorID') if course.get('InstructorID') is not None else ''
+                    instructor_select = ui.select(
+                        options=instructor_options,
+                        label="Instructor",
+                        value=current_instructor
+                    ).classes("w-full")
+                    
+                    with ui.row().classes("w-full gap-4 mt-4"):
+                        ui.button("Cancel", on_click=dialog.close).classes("flex-1")
+                        def handle_submit():
+                            try:
+                                instructor_id = instructor_select.value if instructor_select.value and instructor_select.value != '' else None
+                                update_course(
+                                    course_id,
+                                    name_input.value,
+                                    int(credits_input.value),
+                                    instructor_id
+                                )
+                                dialog.close()
+                                load_data()
+                                ui.notify("Course updated successfully!", color="positive")
+                            except Exception as e:
+                                ui.notify(f"Error updating course: {str(e)}", color="negative")
+                        ui.button("Update", on_click=handle_submit).classes("flex-1 bg-blue-500 text-white")
+                
+                dialog.open()
 
             def handle_delete_course():
                 """Delete the selected course."""
@@ -1032,7 +1306,9 @@ def courses_page():
                         
                         course_table.on('rowClick', handle_row_click)
                         
-                        # Connect delete button
+                        # Connect action buttons
+                        insert_button.on_click(handle_insert_course)
+                        update_button.on_click(handle_update_course)
                         delete_button.on_click(handle_delete_course)
                         
                         total_label = f"Showing {len(filtered_courses)} of {len(all_courses_data)} courses"
